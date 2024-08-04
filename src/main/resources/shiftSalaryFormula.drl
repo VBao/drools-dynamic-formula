@@ -1,0 +1,54 @@
+package com.example.droolsdemo;
+
+import com.VBao.droolsDynamicFormula.SalaryFormulaVariable;
+import com.VBao.droolsDynamicFormula.Formula
+import org.mvel2.MVEL;
+dialect  "mvel"
+@
+
+rule "Calculate Day Shift Salary"
+    salience 3
+    when
+        $vars : SalaryFormulaVariable()
+        $formulaStr : Formula()
+    then
+        formula = $formulaStr.getDayFormula();
+        formula = mapShiftVariableFormula(formula,$vars);
+        double dayShiftSalary = (double) MVEL.eval(formula);
+        $vars.setDayShiftSalary(dayShiftSalary);
+end
+
+rule "Calculate Night Shift Salary"
+    salience 2
+    when
+        $vars : SalaryFormulaVariable()
+        $formulaStr : Formula()
+    then
+        formula = $formulaStr.getNightFormula();
+        formula = mapShiftVariableFormula(formula,$vars);
+        double nightShiftSalary = (double) MVEL.eval(formula);
+        $vars.setNightShiftSalary(nightShiftSalary);
+end
+
+rule "Calculate Total Shift Salary"
+    salience 1
+    when
+        $vars : SalaryFormulaVariable()
+        $formulaStr : Formula()
+    then
+        formula = $formulaStr.getTotalShiftFormula();
+        formula = formula.replace("DayShiftSalary", String.valueOf($vars.getDayShiftSalary()));
+        formula = formula.replace("NightShiftSalary", String.valueOf($vars.getNightShiftSalary()));
+        double totalShiftSalary = (Double) MVEL.eval(formula);
+        $vars.setFinalShiftSalary(totalShiftSalary);
+end
+
+
+
+function String mapShiftVariableFormula(String formula,SalaryFormulaVariable vars) {
+    return formula
+        .replace("BaseSalary", String.valueOf(vars.getBaseSalary()))
+        .replace("RealDayShiftWorkingHours", String.valueOf(vars.getRealDayShiftWorkingHours()))
+        .replace("RealNightShiftWorkingHours", String.valueOf(vars.getRealNightShiftWorkingHours()))
+        .replace("StandardWorkingTime", String.valueOf(vars.getStandardWorkingTime()));
+}
